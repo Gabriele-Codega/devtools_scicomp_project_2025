@@ -18,3 +18,7 @@ def test_majority_vote():
 def test_kNN_constructor():
     with pytest.raises(TypeError):
         a = kNN(1.)
+    with pytest.raises(TypeError):
+        a = kNN(1,0)
+    with pytest.raises(ValueError):
+        a = kNN(1,'blah')

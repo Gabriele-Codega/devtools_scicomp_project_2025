@@ -1,0 +1,66 @@
+Timer unit: 1e-06 s
+
+Total time: 0.001817 s
+File: /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/utils.py
+Function: majority_vote at line 12
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    12                                           @profile
+    13                                           def majority_vote(neighbors: list[int]) -> int:
+    14       281        180.0      0.6      9.9      labels = range(max(neighbors)+1)
+    15       281        224.0      0.8     12.3      counts = [ 0 for _ in labels ]
+    16       281        170.0      0.6      9.4      votes = dict(zip(labels,counts)) 
+    17                                           
+    18      1686        435.0      0.3     23.9      for label in neighbors:
+    19      1405        493.0      0.4     27.1          votes[label] += 1
+    20                                           
+    21       281        315.0      1.1     17.3      return max(votes, key=lambda key: votes[key])
+
+Total time: 0.46832 s
+File: /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/utils.py
+Function: distance at line 4
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     4                                           @profile
+     5                                           def distance(point1: list[float], point2: list[float]) -> float:
+     6     19670       4366.0      0.2      0.9      distance = 0
+     7    688450     201478.0      0.3     43.0      for x1,x2 in zip(point1,point2):
+     8    668780     257031.0      0.4     54.9          distance += (x1-x2)*(x1-x2)
+     9                                           
+    10     19670       5445.0      0.3      1.2      return distance
+
+Total time: 0.981425 s
+File: /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/classifier.py
+Function: _get_k_nearest_neighbors at line 10
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    10                                               @profile
+    11                                               def _get_k_nearest_neighbors(self, X: list[list[float]], y: list[int], x: list[float]) -> list[int]:
+    12       281     974756.0   3468.9     99.3          distances = list(map(partial(distance,x),X))
+    13                                           
+    14       281       5408.0     19.2      0.6          nn = sorted(range(len(distances)), key= lambda i: distances[i])
+    15                                           
+    16       281         81.0      0.3      0.0          labels = []
+    17      1686        591.0      0.4      0.1          for idx in nn[:self.n_neigh]:
+    18      1405        520.0      0.4      0.1              labels.append(y[idx])
+    19       281         69.0      0.2      0.0          return labels
+
+Total time: 0.988 s
+File: /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/classifier.py
+Function: __call__ at line 21
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    21                                               @profile
+    22                                               def __call__(self, data: tuple[list[list[float]],list[int]], new_points):
+    23         1     984263.0 984263.0     99.6          nn_labels = list(map(partial(self._get_k_nearest_neighbors,*data), new_points))
+    24         1       3737.0   3737.0      0.4          prediction = list(map(majority_vote,nn_labels))
+    25         1          0.0      0.0      0.0          return prediction
+
+  0.00 seconds - /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/utils.py:12 - majority_vote
+  0.47 seconds - /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/utils.py:4 - distance
+  0.98 seconds - /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/classifier.py:10 - _get_k_nearest_neighbors
+  0.99 seconds - /Users/gabrielecodega/Documents/amma/dev_tools/devtools_scicomp_project_2025/src/pyclassify/classifier.py:21 - __call__
