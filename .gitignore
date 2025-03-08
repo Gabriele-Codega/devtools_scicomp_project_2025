@@ -175,3 +175,5 @@ data/
 *.data
 # lightning logs
 lightning_logs/
+# random stuff
+debugging/

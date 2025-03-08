@@ -1,0 +1,6 @@
+device: gpu
+size: 20
+function: 
+  routine: matmul_numba_gpu
+  block_size: 16
+print: True
