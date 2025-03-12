@@ -9,61 +9,59 @@ def matmul(A,B,C,_):
                 tmp += A[i,k] * B[k,j]
             C[i,j] = tmp
 
-@njit(void(float64[:,:],float64[:,:],float64[:,:],numba.optional(int32)), cache=True)
+@njit(void(float64[:,::1],float64[:,::1],float64[:,:],numba.optional(int32)), cache=True)
 def matmul_numba_serial(A,B,C,_):
     for i in range(A.shape[0]):
-        for j in range(B.shape[1]):
-            tmp = 0.
-            for k in range(A.shape[-1]):
-                tmp += A[i,k] * B[k,j]
-            C[i,j] = tmp
+        for k in range(A.shape[-1]):
+            for j in range(B.shape[1]):
+                C[i,j] += A[i,k] * B[k,j]
 
-@njit(void(float64[:,:],float64[:,:],float64[:,:],numba.optional(int32)), parallel=True, nogil=True, cache=True)
+@njit(void(float64[:,::1],float64[:,::1],float64[:,:],numba.optional(int32)), parallel=True, nogil=True, cache=True)
 def matmul_numba_cpu(A,B,C,_):
     for i in prange(A.shape[0]):
-        for j in range(B.shape[1]):
-            tmp = 0.
-            for k in range(A.shape[1]):
-                tmp += A[i,k] * B[k,j]
-            C[i,j] = tmp
+        for k in range(A.shape[1]):
+            for j in range(B.shape[1]):
+                C[i,j] += A[i,k] * B[k,j]
 
 
 
-@njit(void(float64[:,:],float64[:,:],float64[:,:],int32), parallel=True, nogil=True, cache=True)
+@njit(void(float64[:,::1],float64[:,::1],float64[:,:],int32), parallel=True, nogil=True, cache=True)
 def matmul_numba_block_cpu(A,B,C, bs=64):
-    niblocks = (A.shape[0]//bs) + ((A.shape[0] % bs) > 0)
+    N = A.shape[0]
+    M = B.shape[1]
+    K = A.shape[1]
+    niblocks = (N//bs) + ((N % bs) > 0)
     for ii in prange(0,niblocks):
         i0 = ii*bs
-        imax = i0+bs if i0+bs < A.shape[0] else A.shape[0]
-        for jj in range(0,B.shape[1],bs):
-            jmax = jj+bs if jj+bs < B.shape[1] else B.shape[1]
-            for kk in range(0,A.shape[-1],bs):
-                kmax = kk+bs if kk+bs < A.shape[-1] else A.shape[-1]
+        imax = min(i0+bs,N)
+        for kk in range(0,K,bs):
+            kmax = min(kk+bs,K)
+            for jj in range(0,M,bs):
+                jmax = min(jj+bs,M)
                 for i in range(i0,imax):
-                    for j in range(jj,jmax):
-                        tmp = 0.
-                        for k in range(kk,kmax):
-                            tmp += A[i,k] * B[k,j]
-                        C[i,j] += tmp
+                    for k in range(kk,kmax):
+                        for j in range(jj,jmax):
+                            C[i,j] += A[i,k] * B[k,j]
 
-@njit(void(float64[:,:],float64[:,:],float64[:,:],int32), parallel=False, nogil=True, cache=True)
+@njit(void(float64[:,::1],float64[:,::1],float64[:,:],int32), parallel=False, nogil=True, cache=True)
 def matmul_numba_block_serial(A,B,C, bs=64):
-    niblocks = (A.shape[0]//bs) + ((A.shape[0] % bs) > 0)
+    N = A.shape[0]
+    M = B.shape[1]
+    K = A.shape[1]
+    niblocks = (N//bs) + ((N % bs) > 0)
     for ii in range(0,niblocks):
         i0 = ii*bs
-        imax = i0+bs if i0+bs < A.shape[0] else A.shape[0]
-        for jj in range(0,B.shape[1],bs):
-            jmax = jj+bs if jj+bs < B.shape[1] else B.shape[1]
-            for kk in range(0,A.shape[-1],bs):
-                kmax = kk+bs if kk+bs < A.shape[-1] else A.shape[-1]
+        imax = min(i0+bs,N)
+        for kk in range(0,K,bs):
+            kmax = min(kk+bs,K)
+            for jj in range(0,M,bs):
+                jmax = min(jj+bs,M)
                 for i in range(i0,imax):
-                    for j in range(jj,jmax):
-                        tmp = 0.
-                        for k in range(kk,kmax):
-                            tmp += A[i,k] * B[k,j]
-                        C[i,j] += tmp
+                    for k in range(kk,kmax):
+                        for j in range(jj,jmax):
+                            C[i,j] += A[i,k] * B[k,j]
 
-@cuda.jit(void(float64[:,:],float64[:,:],float64[:,:]), cache=True)
+@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True)
 def matmul_numba_gpu(A,B,C):
     i, j = cuda.grid(ndim=2)
     if i < C.shape[0] and j < C.shape[1]:
@@ -73,7 +71,7 @@ def matmul_numba_gpu(A,B,C):
         C[i,j] = tmp
 
 BLOCK_SIZE = 16
-@cuda.jit(void(float64[:,:],float64[:,:],float64[:,:]), cache=True)
+@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True)
 def matmul_numba_block_gpu(A,B,C):
 
     bi = cuda.blockIdx.y

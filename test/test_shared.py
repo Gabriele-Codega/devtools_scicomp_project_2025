@@ -40,7 +40,7 @@ def test_matmul_numba_block_cpu():
     B = np.eye(size,dtype=np.float64)
     C = np.zeros((size,size),dtype=np.float64)
 
-    matmul_numba_block_cpu(A,B,C,64)
+    matmul_numba_block_cpu(A,B,C,6)
 
     assert np.allclose(A,C)
 
@@ -50,7 +50,7 @@ def test_matmul_numba_block_serial():
     B = np.eye(size,dtype=np.float64)
     C = np.zeros((size,size),dtype=np.float64)
 
-    matmul_numba_block_cpu(A,B,C,64)
+    matmul_numba_block_serial(A,B,C,6)
 
     assert np.allclose(A,C)
 

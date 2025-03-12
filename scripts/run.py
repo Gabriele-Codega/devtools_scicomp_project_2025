@@ -37,9 +37,9 @@ def main_cpu(params: dict):
     row_offset = np.cumsum(workloads)[rank-1] if rank > 0 else 0
 
     # initialise matrices somehow
-    A = np.arange(1, SIZE*n_loc + 1, dtype=np.float64).reshape((n_loc,SIZE)) + (row_offset * SIZE)
-    B = np.zeros((n_loc,SIZE), dtype=np.float64)
-    C = np.zeros((n_loc,SIZE), dtype=np.float64)
+    A = np.arange(1, SIZE*n_loc + 1, dtype=np.float64).reshape((n_loc,SIZE),order='C') + (row_offset * SIZE)
+    B = np.zeros((n_loc,SIZE), dtype=np.float64,order='C')
+    C = np.zeros((n_loc,SIZE), dtype=np.float64,order='C')
     for i in range(n_loc):
         B[i, i+row_offset] = 1
 
@@ -48,8 +48,8 @@ def main_cpu(params: dict):
     rcvcounts = workloads*ncols
     displacements = np.cumsum(rcvcounts) - rcvcounts
 
-    B_block = np.empty((n_loc,ncols), dtype=np.float64)
-    B_col = np.empty((SIZE,ncols), dtype=np.float64)
+    B_block = np.empty((n_loc,ncols), dtype=np.float64,order='C')
+    B_col = np.empty((SIZE,ncols), dtype=np.float64,order='C')
 
     t_tot = 0
     start = 0
@@ -60,8 +60,8 @@ def main_cpu(params: dict):
             rcvcounts = workloads*ncols
             displacements = np.cumsum(rcvcounts) - rcvcounts
 
-            B_block = np.empty((n_loc,ncols), dtype=np.float64)
-            B_col = np.empty((SIZE,ncols), dtype=np.float64)
+            B_block = np.empty((n_loc,ncols), dtype=np.float64,order='C')
+            B_col = np.empty((SIZE,ncols), dtype=np.float64,order='C')
 
         # create a contiguous block from B to communicate
         create_block(B, B_block, start, ncols)

@@ -1,6 +1,6 @@
-device: gpu
-size: 20
+device: cpu
+size: 512
 function: 
-  routine: matmul_numba_gpu
-  block_size: 16
-print: True
+  routine: matmul_numba_block_serial
+  block_size: 24
+print: False
