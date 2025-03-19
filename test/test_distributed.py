@@ -3,7 +3,7 @@ import os
 import numpy as np
 from numba import cuda
 
-from matmul import matmul, matmul_numba_gpu
+from matmul import matmul, matmul_numba_block_gpu
 from matmul.utils import create_block
 
 import mpi4py
@@ -40,11 +40,12 @@ def test_parallel_cpu():
     row_offset = np.cumsum(workloads)[rank-1] if rank > 0 else 0
 
     # initialise matrices somehow
-    A = np.arange(1, SIZE*n_loc + 1, dtype=np.float64).reshape((n_loc,SIZE)) + (row_offset * SIZE)
-    B = np.zeros((n_loc,SIZE), dtype=np.float64)
+    np.random.seed(0)
+    atot = np.random.rand(SIZE,SIZE)
+    btot = np.linalg.inv(atot)
+    A = atot[row_offset:row_offset+n_loc,:]
+    B = btot[row_offset:row_offset+n_loc,:]
     C = np.zeros((n_loc,SIZE), dtype=np.float64)
-    for i in range(n_loc):
-        B[i, i+row_offset] = 1
 
     # Compute quantities for Allgatherv and allocate required memory
     ncols = workloads[0]
@@ -80,12 +81,12 @@ def test_parallel_cpu():
     rcvcounts = workloads*SIZE
     displacements = np.cumsum(rcvcounts) - rcvcounts
     if rank == 0:
-        A_tot = np.arange(1, SIZE*SIZE + 1, dtype=np.float64).reshape((SIZE,SIZE))
+        target = np.eye(SIZE)
     C_tot = np.zeros((SIZE,SIZE))
     comm.Gatherv([C, MPI.DOUBLE], [C_tot, rcvcounts, displacements, MPI.DOUBLE])
 
     if rank == 0:
-        assert np.allclose(A_tot,C_tot)
+        assert np.allclose(target,C_tot)
 
     comm.Barrier()
 
@@ -117,11 +118,12 @@ def test_parallel_gpu():
     row_offset = np.cumsum(workloads)[rank-1] if rank > 0 else 0
 
     # initialise matrices somehow
-    A = np.arange(1, SIZE*n_loc + 1, dtype=np.float64).reshape((n_loc,SIZE)) + (row_offset * SIZE)
-    B = np.zeros((n_loc,SIZE), dtype=np.float64)
+    np.random.seed(0)
+    atot = np.random.rand(SIZE,SIZE)
+    btot = np.linalg.inv(atot)
+    A = atot[row_offset:row_offset+n_loc,:]
+    B = btot[row_offset:row_offset+n_loc,:]
     C = np.zeros((n_loc,SIZE), dtype=np.float64)
-    for i in range(n_loc):
-        B[i, i+row_offset] = 1
 
     # Compute quantities for Allgatherv and allocate required memory
     ncols = workloads[0]
@@ -151,8 +153,8 @@ def test_parallel_gpu():
 
             B_block = np.empty((n_loc,ncols), dtype=np.float64)
             B_col = np.empty((SIZE,ncols), dtype=np.float64)
-
             blocks_per_grid = ((n_loc + nthreads-1)//nthreads,(ncols + nthreads-1)//nthreads)
+
 
         # create a contiguous block from B to communicate
         create_block(B, B_block, start, ncols)
@@ -163,7 +165,7 @@ def test_parallel_gpu():
         b_d = cuda.to_device(B_col)
 
         # multiply
-        matmul_numba_gpu[blocks_per_grid, threads_per_block](a_d,b_d,c_d[:,start:start+ncols])
+        matmul_numba_block_gpu[blocks_per_grid, threads_per_block](a_d,b_d,c_d[:,start:start+ncols])
 
         start += ncols
 
@@ -172,12 +174,12 @@ def test_parallel_gpu():
     rcvcounts = workloads*SIZE
     displacements = np.cumsum(rcvcounts) - rcvcounts
     if rank == 0:
-        A_tot = np.arange(1, SIZE*SIZE + 1, dtype=np.float64).reshape((SIZE,SIZE))
+        target = np.eye(SIZE)
     C_tot = np.zeros((SIZE,SIZE))
     comm.Gatherv([C, MPI.DOUBLE], [C_tot, rcvcounts, displacements, MPI.DOUBLE])
 
     if rank == 0:
-        assert np.allclose(A_tot,C_tot)
+        assert np.allclose(target,C_tot)
 
     comm.Barrier()
 

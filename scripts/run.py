@@ -135,8 +135,10 @@ def main_gpu(params: dict):
     a_d = cuda.to_device(A)
     c_d = cuda.to_device(C)
 
+    # each process at each step computes a block of C of size n_loc x ncols
+    # we set parameters for the kernel accordingly
     nthreads = bs
-    blocks_per_grid = ((n_loc + nthreads-1)//nthreads,(SIZE + nthreads-1)//nthreads)
+    blocks_per_grid = ((n_loc + nthreads-1)//nthreads,(ncols + nthreads-1)//nthreads)
     threads_per_block = (nthreads, nthreads)
 
     t_tot = 0
@@ -150,6 +152,7 @@ def main_gpu(params: dict):
 
             B_block = np.empty((n_loc,ncols), dtype=np.float64)
             B_col = np.empty((SIZE,ncols), dtype=np.float64)
+            blocks_per_grid = ((n_loc + nthreads-1)//nthreads,(ncols + nthreads-1)//nthreads)
 
         # create a contiguous block from B to communicate
         create_block(B, B_block, start, ncols)

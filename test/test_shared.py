@@ -6,59 +6,65 @@ from matmul import matmul, matmul_numba_cpu, matmul_numba_serial, matmul_numba_b
 
 def test_matmul():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     matmul(A,B,C,None)
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 def test_matmul_numba_cpu():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     matmul_numba_cpu(A,B,C,None)
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 def test_matmul_numba_serial():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     matmul_numba_serial(A,B,C,None)
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 def test_matmul_numba_block_cpu():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     matmul_numba_block_cpu(A,B,C,6)
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 def test_matmul_numba_block_serial():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     matmul_numba_block_serial(A,B,C,6)
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 @pytest.mark.skipif((not numba.cuda.is_available()), reason='Could not find any CUDA GPU')
 def test_matmul_numba_gpu():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     a_d = numba.cuda.to_device(A)
@@ -73,13 +79,14 @@ def test_matmul_numba_gpu():
 
     C = c_d.copy_to_host()
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 @pytest.mark.skipif((not numba.cuda.is_available()), reason='Could not find any CUDA GPU')
 def test_matmul_numba_block_gpu():
     size = 20
-    A = np.arange(1,size*size+1,1,dtype=np.float64).reshape((size,size))
-    B = np.eye(size,dtype=np.float64)
+    np.random.seed(0)
+    A = np.random.rand(size,size)
+    B = np.linalg.inv(A)
     C = np.zeros((size,size),dtype=np.float64)
 
     a_d = numba.cuda.to_device(A)
@@ -94,6 +101,6 @@ def test_matmul_numba_block_gpu():
 
     C = c_d.copy_to_host()
 
-    assert np.allclose(A,C)
+    assert np.allclose(np.eye(size),C)
 
 
