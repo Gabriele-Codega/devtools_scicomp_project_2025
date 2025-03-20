@@ -15,6 +15,22 @@ def test_matmul():
 
     assert np.allclose(np.eye(size),C)
 
+    with pytest.raises(AssertionError):
+        A = np.empty((size,size+1))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul(A,B,C,None)
+        A = np.empty((size+1,size))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul(A,B,C,None)
+        A = np.empty((size,size))
+        B = np.empty((size,size+1))
+        C = np.empty((size,size))
+        matmul(A,B,C,None)
+
+
+
 def test_matmul_numba_cpu():
     size = 20
     np.random.seed(0)
@@ -25,6 +41,21 @@ def test_matmul_numba_cpu():
     matmul_numba_cpu(A,B,C,None)
 
     assert np.allclose(np.eye(size),C)
+
+    with pytest.raises(AssertionError):
+        A = np.empty((size,size+1),dtype=np.float64)
+        B = np.empty((size,size),dtype=np.float64)
+        C = np.empty((size,size),dtype=np.float64)
+        matmul_numba_cpu(A,B,C,None)
+        A = np.empty((size+1,size),dtype=np.float64)
+        B = np.empty((size,size),dtype=np.float64)
+        C = np.empty((size,size),dtype=np.float64)
+        matmul_numba_cpu(A,B,C,None)
+        A = np.empty((size,size),dtype=np.float64)
+        B = np.empty((size,size+1),dtype=np.float64)
+        C = np.empty((size,size),dtype=np.float64)
+        matmul_numba_cpu(A,B,C,None)
+
 
 def test_matmul_numba_serial():
     size = 20
@@ -37,6 +68,20 @@ def test_matmul_numba_serial():
 
     assert np.allclose(np.eye(size),C)
 
+    with pytest.raises(AssertionError):
+        A = np.empty((size,size+1))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_serial(A,B,C,None)
+        A = np.empty((size+1,size))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_serial(A,B,C,None)
+        A = np.empty((size,size))
+        B = np.empty((size,size+1))
+        C = np.empty((size,size))
+        matmul_numba_serial(A,B,C,None)
+
 def test_matmul_numba_block_cpu():
     size = 20
     np.random.seed(0)
@@ -48,6 +93,20 @@ def test_matmul_numba_block_cpu():
 
     assert np.allclose(np.eye(size),C)
 
+    with pytest.raises(AssertionError):
+        A = np.empty((size,size+1))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_block_cpu(A,B,C,6)
+        A = np.empty((size+1,size))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_block_cpu(A,B,C,6)
+        A = np.empty((size,size))
+        B = np.empty((size,size+1))
+        C = np.empty((size,size))
+        matmul_numba_block_cpu(A,B,C,6)
+
 def test_matmul_numba_block_serial():
     size = 20
     np.random.seed(0)
@@ -58,6 +117,20 @@ def test_matmul_numba_block_serial():
     matmul_numba_block_serial(A,B,C,6)
 
     assert np.allclose(np.eye(size),C)
+
+    with pytest.raises(AssertionError):
+        A = np.empty((size,size+1))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_block_serial(A,B,C,6)
+        A = np.empty((size+1,size))
+        B = np.empty((size,size))
+        C = np.empty((size,size))
+        matmul_numba_block_serial(A,B,C,6)
+        A = np.empty((size,size))
+        B = np.empty((size,size+1))
+        C = np.empty((size,size))
+        matmul_numba_block_serial(A,B,C,6)
 
 @pytest.mark.skipif((not numba.cuda.is_available()), reason='Could not find any CUDA GPU')
 def test_matmul_numba_gpu():
@@ -81,6 +154,9 @@ def test_matmul_numba_gpu():
 
     assert np.allclose(np.eye(size),C)
 
+    # No tests for assertion errors on matrix shape since they are only available
+    # for debug=True
+
 @pytest.mark.skipif((not numba.cuda.is_available()), reason='Could not find any CUDA GPU')
 def test_matmul_numba_block_gpu():
     size = 20
@@ -103,4 +179,5 @@ def test_matmul_numba_block_gpu():
 
     assert np.allclose(np.eye(size),C)
 
-
+    # No tests for assertion errors on matrix shape since they are only available
+    # for debug=True

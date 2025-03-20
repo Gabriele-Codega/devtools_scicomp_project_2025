@@ -10,7 +10,7 @@ def read_config(config_path: str):
 
     Params:
       - config_path : str
-        Path to the config file, withot the extension.
+        Path to the config file, without the extension.
     Returns:
       - params:
         Dictionary with parameters.

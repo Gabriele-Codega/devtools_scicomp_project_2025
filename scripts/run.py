@@ -1,3 +1,5 @@
+from functools import wraps
+from warnings import warn
 import numpy as np
 from numba import cuda
 
@@ -11,7 +13,14 @@ from matmul.utils import create_block, read_config
 import argparse
 import importlib
 
-from line_profiler import profile
+try:
+    from line_profiler import profile
+except ModuleNotFoundError:
+    warn("Did not find line_profiler. Please install it to access profiling information.")
+    def profile(f,*args,**kwargs):
+        def wrapper(*args,**kwargs):
+            f(*args,**kwargs)
+        return wrapper
 
 @profile
 def main_cpu(params: dict):

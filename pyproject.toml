@@ -1,4 +1,5 @@
 # Choosing a build backend:
+[build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
@@ -6,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "matmul"
 version = "0.0.1"
-description = "Gabriele Codega"
+description = "Distributed matrix multiplication."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -22,3 +23,5 @@ dependencies = { file = ["requirements.txt"] }
 
 [project.optional-dependencies]
 test = ["pytest"]
+profile = ["line_profiler"]
+dev = ["pytest", "line_profiler"]

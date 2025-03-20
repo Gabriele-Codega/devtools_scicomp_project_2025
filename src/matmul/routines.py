@@ -2,6 +2,7 @@ from numba import void, float64, int32, njit, prange, cuda
 import numba
 
 def matmul(A,B,C,_):
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), f"Matrices have incompatible shapes: {A.shape}, {B.shape}, {C.shape}"
     for i in range(A.shape[0]):
         for j in range(B.shape[1]):
             tmp = 0.
@@ -11,6 +12,7 @@ def matmul(A,B,C,_):
 
 @njit(void(float64[:,::1],float64[:,::1],float64[:,:],numba.optional(int32)), cache=True)
 def matmul_numba_serial(A,B,C,_):
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), f"Matrices have incompatible shapes: {A.shape}, {B.shape}, {C.shape}"
     for i in range(A.shape[0]):
         for k in range(A.shape[-1]):
             for j in range(B.shape[1]):
@@ -18,6 +20,7 @@ def matmul_numba_serial(A,B,C,_):
 
 @njit(void(float64[:,::1],float64[:,::1],float64[:,:],numba.optional(int32)), parallel=True, nogil=True, cache=True)
 def matmul_numba_cpu(A,B,C,_):
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), f"Matrices have incompatible shapes: {A.shape}, {B.shape}, {C.shape}"
     for i in prange(A.shape[0]):
         for k in range(A.shape[1]):
             for j in range(B.shape[1]):
@@ -27,6 +30,7 @@ def matmul_numba_cpu(A,B,C,_):
 
 @njit(void(float64[:,::1],float64[:,::1],float64[:,:],int32), parallel=True, nogil=True, cache=True)
 def matmul_numba_block_cpu(A,B,C, bs=64):
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), f"Matrices have incompatible shapes: {A.shape}, {B.shape}, {C.shape}"
     N = A.shape[0]
     M = B.shape[1]
     K = A.shape[1]
@@ -45,6 +49,7 @@ def matmul_numba_block_cpu(A,B,C, bs=64):
 
 @njit(void(float64[:,::1],float64[:,::1],float64[:,:],int32), parallel=False, nogil=True, cache=True)
 def matmul_numba_block_serial(A,B,C, bs=64):
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), f"Matrices have incompatible shapes: {A.shape}, {B.shape}, {C.shape}"
     N = A.shape[0]
     M = B.shape[1]
     K = A.shape[1]
@@ -61,8 +66,10 @@ def matmul_numba_block_serial(A,B,C, bs=64):
                         for j in range(jj,jmax):
                             C[i,j] += A[i,k] * B[k,j]
 
-@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True)
+@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True, debug=False)
 def matmul_numba_gpu(A,B,C):
+    # this only has effect if function is compiled with debug = True
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), "Matrices have incompatible shapes"
     i, j = cuda.grid(ndim=2)
     if i < C.shape[0] and j < C.shape[1]:
         tmp = 0.
@@ -71,8 +78,10 @@ def matmul_numba_gpu(A,B,C):
         C[i,j] = tmp
 
 BLOCK_SIZE = 16
-@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True)
+@cuda.jit(void(float64[:,::1],float64[:,::1],float64[:,:]), cache=True, debug=False)
 def matmul_numba_block_gpu(A,B,C):
+    # this only has effect if function is compiled with debug = True
+    assert (A.shape[0] == C.shape[0]) and (A.shape[1] == B.shape[0]) and (B.shape[1] == C.shape[1]), "Matrices have incompatible shapes"
 
     bi = cuda.blockIdx.y
     bj = cuda.blockIdx.x
