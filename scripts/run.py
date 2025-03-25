@@ -1,5 +1,5 @@
 from functools import wraps
-from warnings import warn
+import warnings
 import numpy as np
 from numba import cuda
 
@@ -9,14 +9,15 @@ mpi4py.rc.initialize = False
 mpi4py.rc.finalize = False
 from mpi4py import MPI
 
-from matmul.utils import create_block, read_config
+from matmul.utils import create_block, read_config, custom_warning
 import argparse
 import importlib
 
 try:
     from line_profiler import profile
 except ModuleNotFoundError:
-    warn("Did not find line_profiler. Please install it to access profiling information.")
+    warnings.formatwarning = custom_warning
+    warnings.warn("Did not find line_profiler. Please install it to access profiling information.")
     def profile(f,*args,**kwargs):
         def wrapper(*args,**kwargs):
             f(*args,**kwargs)
@@ -225,6 +226,8 @@ if __name__=="__main__":
             raise ValueError(f"Specified routine '{routine}' is incompatible with device 'cpu'. Compatible routines are {cpu_routines}.")
         main_cpu(params)
     elif params["device"] == "gpu" :
+        if not cuda.is_available():
+            raise RuntimeError("Trying to run on GPU but CUDA is not available")
         if not routine in gpu_routines:
             raise ValueError(f"Specified routine '{routine}' is incompatible with device 'gpu'. Compatible routines are {gpu_routines}.")
         main_gpu(params)

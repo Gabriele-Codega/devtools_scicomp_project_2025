@@ -6,14 +6,26 @@ Code for the exam in Development tools for Scientific Computing, SISSA, a.y. 202
 ---
 
 ## Parallel matrix-matrix multiplication
-The goal here was to implement matrix-matrix multiplication in distributed memory. The core idea is to split the matrices we want to multiply between MPI processes, and let each process compute a chunk of the result. Since we are in distributed memory, some communication is required for each process to properly compute its chunk of the result, but ultimately each process needs some matrix-matrix multiplication routine to do its work. The efficiency of the underliying multiplication routine can severely affect the performance of the distributed algorithm. Different matrix-matrix multiplication routines are provided in `src/matmul/routines.py`, all of which can be used in the distributed routine. The actual distributed machinery is provided in `scripts/run.py`.
+The goal here was to implement matrix-matrix multiplication in distributed memory. Details about the implementation are [a bit further down](#notes-on-the-implementation), but the general idea is to split the matrices we want to multiply between MPI processes, and let each process compute a chunk of the result. The whole distributed multiplication requires a bunch of steps such as computing the workload for each process, initialising the data, communicating and computing individual chunks, hence it is not straight forward to write some `distributed_multiply` routine. In fact, in this code there is no such routine, but rather the whole distributed machinery is provided in `scripts/run.py`.
+
+In `src/matmul/routines.py` are a number of matrix-matrix multiplication routines (serial, parallel, tiled, GPU-accelerated) that can be used in the distributed algorithm. The performance of the distributed algorithm depends on the performance of the base routine.
 
 All the code is implemented in Python. NumPy is employed to manipulate the matrices, while Numba is used to JIT compile routines in serial, parallel, CPU and GPU code. The MPI is provided by mpi4py.
 
-This package tries to install mpi4py with `pip`, which requires a working installation of MPI on the machine. Also, for GPU computing, a recent version of the CUDA Toolkit is required (see [Numba](https://numba.readthedocs.io/en/stable/cuda/overview.html) for details).
+## Installation
+**NOTE:** Installing mpi4py with `pip` requires a working installation of MPI on the machine. Also, for GPU computing, a recent version of the CUDA Toolkit is required (see [Numba](https://numba.readthedocs.io/en/stable/cuda/overview.html) for details).
 
-### NVHPC
-As it turns out, NVHPC ships with all is needed here. One issue is that mpi4py is not really meant to be compiled with nvc by default. If you have issues while installing you may want to try this
+### From GitHub
+Clone this repo locally and then run
+```bash
+python -m pip install --no-cache-dir --no-binary=mpi4py -r requirements.txt
+python -m pip install .
+```
+Optionally install dependencies for testing (`test`), profiling (`profile`) or both (`dev`) with
+```bash
+python -m pip install .[<DEPENDENCY>]
+```
+As it turns out, [NVHPC](https://developer.nvidia.com/hpc-sdk) ships with all is needed here. One issue is that mpi4py is not really meant to be compiled with nvc by default. If you have issues while installing you may want to try this
 ``` bash
 CFLAGS=-noswitcherror python -m pip install --no-cache-dir --no-binary=mpi4py mpi4py
 ```
@@ -23,7 +35,20 @@ export CUDA_HOME=$NVHPC_ROOT/cuda/12.0
 export NUMBAPRO_NVVM=$NVHPC_ROOT/cuda/12.0/nvvm/lib64
 export NUMBAPRO_LIBDEVICE=$NVHPC_ROOT/cuda/12.0/nvvm/libdevice
 ```
-Finally, should you run any of this code on an HPC facility and submit a SLURM job, note that SLURM's `srun` might not work with mpi4py, and you may need to use `mpirun` instead.
+
+### From DockerHub
+You can get container images with this code from DockerHub as well. The images are built with CUDA 12.4 and still require NVIDIA drivers on the host machine to run.
+If you plan on running a Docker container you can get the image with
+```bash
+docker pull gcodega/matmul:cuda12.4-docker
+```
+If you plan on running a Singularity container, you can get a different tag
+```bash
+docker pull gcodega/matmul:cuda12.4-singularity
+```
+Note that to run Docker with CUDA support you may need the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html), whereas Singularity natively supports CUDA.
+
+The tags only differ in that the Docker image has some custom user (tony:matmul), whereas the Singularity image runs as root. Not setting a different user in the Singularity image is actually recommended, as Singularity containers inherit the user from the host, and setting a user different from root may cause issues with environments inside the container. Also, if you want to run the code on some HPC facility you may want to use the Singularity image, as it can interact with the host MPI and run on multiple nodes. Note that in this case performance may not be optimal, as the OpenMPI inside the container is not optimized for any specific machine.
 
 ## Run some tests
 To check out how different routines perform you can run `scripts/run.py`. After installing the package, you can modify `examples/config.yaml` by specifying the following parameters:
@@ -38,7 +63,7 @@ You can run the script with
 ```
 mpirun -n <ntasks> python scripts/run.py --config experiments/config
 ```
-Note that if you want to run this in serial you still need to use `mpirun -n 1 ...`
+Note that if you want to run this in serial you still need to use `mpirun -n 1 ...`. Moreover, should you run any of this code on an HPC facility and submit a SLURM job, also note that SLURM's `srun` might not work with mpi4py, and you may need to use `mpirun` instead (in `shell/submit.sbatch` you can find the script that I used to submit jobs on Ulysses at SISSA). Finally, when running through Singularity you may need to specify absolute paths for the scripts (all source code is in `/shared-folder/app`).
 
 ### Profiling
 The script will print to screen the time spent in multiplying the matrices (i.e. no communication time or others). You can get more insights by profiling the code with kernprof. The script in `shell/submit.sh` lets you run one instance of kernprof for each MPI task and save the results on different files. You can select the number of threads for parallel routines by changing `NUMBA_NUM_THREADS` and customize the output path for kernprof. Run the script as

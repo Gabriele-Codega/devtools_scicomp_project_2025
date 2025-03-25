@@ -1,6 +1,6 @@
 device: cpu
-size: 4096
+size: 256
 function: 
-  routine: matmul_numba_serial
+  routine: matmul_numba_cpu
   block_size: 32
 print: False
